@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Steam Player Credibility</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --card:      #1c2230;
+      --border:    #30363d;
+      --accent:    #1a9fff;
+      --accent2:   #66c0f4;
+      --green:     #4ade80;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --radius:    14px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .bg-particles {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(26,159,255,.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(102,192,244,.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .page {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2rem;
+    }
+
+    .brand {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 2.5rem;
+      animation: fadeDown .6s ease both;
+    }
+    .brand-icon {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 0 30px rgba(26,159,255,.4);
+    }
+    .brand h1 {
+      font-size: 2rem; font-weight: 800;
+      background: linear-gradient(90deg, #e6edf3, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand span {
+      display: block; font-size: .85rem; font-weight: 400;
+      color: var(--muted); -webkit-text-fill-color: var(--muted);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2.5rem 2rem;
+      width: 100%; max-width: 540px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      animation: fadeUp .7s .1s ease both;
+    }
+
+    .card h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: .4rem; }
+    .card p  { color: var(--muted); font-size: .9rem; margin-bottom: 1.8rem; line-height: 1.6; }
+
+    .field-label {
+      font-size: .8rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .05em;
+      margin-bottom: .45rem; display: flex; align-items: center; justify-content: space-between;
+    }
+    .field-label a {
+      font-size: .78rem; color: var(--accent); text-decoration: none; font-weight: 500;
+      text-transform: none; letter-spacing: 0;
+    }
+    .field-label a:hover { text-decoration: underline; }
+
+    .input-wrap { position: relative; margin-bottom: 1.1rem; }
+    .input-wrap .icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 1.1rem; color: var(--muted); pointer-events: none;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit; font-size: .95rem;
+      padding: .85rem 1rem .85rem 2.8rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(26,159,255,.18);
+    }
+    input::placeholder { color: var(--muted); }
+
+    .btn {
+      width: 100%; padding: .9rem;
+      background: linear-gradient(135deg, var(--accent), #0d87e0);
+      color: #fff; border: none; border-radius: 10px;
+      font-family: inherit; font-size: 1rem; font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: .4rem;
+    }
+    .btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,159,255,.35); }
+    .btn:active { transform: translateY(0); }
+    .btn .spinner {
+      display: none; width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    .btn.loading .btn-text { display: none; }
+    .btn.loading .spinner  { display: block; }
+
+    .error-msg {
+      background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.3);
+      color: #f87171; border-radius: 8px; padding: .75rem 1rem;
+      font-size: .87rem; margin-bottom: 1.2rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .api-hint {
+      background: rgba(26,159,255,.07); border: 1px solid rgba(26,159,255,.2);
+      border-radius: 8px; padding: .75rem 1rem;
+      font-size: .82rem; color: var(--muted); line-height: 1.5;
+      margin-bottom: 1.4rem; display: flex; gap: 8px;
+    }
+    .api-hint .hi { color: var(--accent); flex-shrink: 0; font-size: 1rem; }
+    .api-hint a { color: var(--accent2); text-decoration: none; }
+    .api-hint a:hover { text-decoration: underline; }
+
+    .toggle-key {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: .8rem; font-family: inherit;
+      padding: .2rem .4rem; border-radius: 4px;
+    }
+    .toggle-key:hover { color: var(--text); }
+
+    .features {
+      display: flex; gap: .8rem;
+      margin-top: 2rem; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp .8s .25s ease both;
+    }
+    .feat {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: .65rem 1rem;
+      font-size: .78rem; color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .footer {
+      margin-top: 2.5rem; color: var(--muted); font-size: .78rem;
+      text-align: center; animation: fadeUp .9s .35s ease both;
+    }
+
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(20px);  } to { opacity:1; transform:translateY(0); } }
+    @keyframes spin     { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="bg-particles"></div>
+  <div class="page">
+
+    <div class="brand">
+      <div class="brand-icon">🎮</div>
+      <div>
+        <h1>Steam Player Credibility</h1>
+        <span>Review intelligence &amp; credibility analysis</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Analyze a reviewer</h2>
+      <p>Enter a Steam community username and your free API key to pull their full review history and credibility score.</p>
+
+      {% if error %}
+      <div class="error-msg"><span>⚠</span> {{ error }}</div>
+      {% endif %}
+
+      <div class="api-hint">
+        <span class="hi">🔑</span>
+        <span>A <strong>free</strong> Steam API key is required.
+        Get yours in 30 seconds at
+        <a href="https://steamcommunity.com/dev/apikey" target="_blank">steamcommunity.com/dev/apikey</a>
+        — just sign in and enter any website name.</span>
+      </div>
+
+      <form action="/search" method="POST" id="searchForm">
+
+        <div class="field-label">Steam Username</div>
+        <div class="input-wrap" style="margin-bottom:1.4rem;">
+          <span class="icon">🎮</span>
+          <input
+            type="text"
+            name="username"
+            placeholder="e.g. gaben or 76561197960287930"
+            autocomplete="off"
+            autofocus
+            required
+          />
+        </div>
+
+        <div class="field-label">
+          Steam API Key
+          <a href="https://steamcommunity.com/dev/apikey" target="_blank">Get free key →</a>
+        </div>
+        <div class="input-wrap" style="margin-bottom:1.4rem;">
+          <span class="icon">🔑</span>
+          <input
+            type="password"
+            id="apiKeyInput"
+            name="api_key"
+            placeholder="Paste your API key here"
+            autocomplete="off"
+            required
+          />
+          <button type="button" class="toggle-key" onclick="toggleKey()">Show</button>
+        </div>
+
+        <button class="btn" type="submit" id="submitBtn">
+          <span class="btn-text">Analyze Player →</span>
+          <span class="spinner"></span>
+        </button>
+      </form>
+    </div>
+
+    <div class="features">
+      <div class="feat"><span>📊</span><span>Charts &amp; Graphs</span></div>
+      <div class="feat"><span>🔍</span><span>Credibility Score</span></div>
+      <div class="feat"><span>👍</span><span>Pos / Neg Split</span></div>
+      <div class="feat"><span>📝</span><span>Review Depth</span></div>
+    </div>
+
+    <div class="footer">
+      Uses the official Steam Web API · Profile must be Public
+    </div>
+  </div>
+
+  <script>
+    function toggleKey() {
+      const inp = document.getElementById('apiKeyInput');
+      const btn = document.querySelector('.toggle-key');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.textContent = 'Hide';
+      } else {
+        inp.type = 'password';
+        btn.textContent = 'Show';
+      }
+    }
+    document.getElementById('searchForm').addEventListener('submit', () => {
+      document.getElementById('submitBtn').classList.add('loading');
+    });
+  </script>
+</body>
+</html>

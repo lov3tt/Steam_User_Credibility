@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{{ profile.display_name }} — Steam Player Credibility</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --card:      #1c2230;
+      --border:    #30363d;
+      --accent:    #1a9fff;
+      --accent2:   #66c0f4;
+      --green:     #4ade80;
+      --red:       #f87171;
+      --yellow:    #facc15;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --radius:    14px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh; overflow-x: hidden;
+    }
+
+    /* ── Top nav ────────────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,17,23,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: .85rem 2rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .nav-brand { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .nav-brand a { color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .nav-sep { color: var(--muted); }
+    .nav-user { color: var(--accent2); font-weight: 600; font-size: .95rem; }
+    .nav-back {
+      margin-left: auto;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px; padding: .45rem .9rem;
+      font-size: .82rem; font-family: inherit; cursor: pointer;
+      text-decoration: none; transition: color .2s, border-color .2s;
+    }
+    .nav-back:hover { color: var(--text); border-color: var(--accent); }
+
+    /* ── Main layout ────────────────────────────────────────────────── */
+    main { max-width: 1300px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* ── Profile header ─────────────────────────────────────────────── */
+    .profile-header {
+      display: flex; align-items: center; gap: 1.5rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 12px;
+      border: 3px solid var(--accent);
+      object-fit: cover;
+      background: var(--surface);
+    }
+    .avatar-placeholder {
+      width: 72px; height: 72px; border-radius: 12px;
+      border: 3px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+    }
+    .profile-info h2 { font-size: 1.5rem; font-weight: 800; }
+    .profile-info .meta { color: var(--muted); font-size: .85rem; margin-top: .3rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: .3rem .75rem; border-radius: 999px;
+      font-size: .8rem; font-weight: 600;
+    }
+    .verdict-badge {
+      margin-left: auto;
+      padding: .6rem 1.4rem; border-radius: 999px;
+      font-size: 1rem; font-weight: 700;
+      border: 2px solid;
+    }
+
+    /* ── Section title ──────────────────────────────────────────────── */
+    .section-title {
+      font-size: 1rem; font-weight: 700; letter-spacing: .03em;
+      color: var(--muted); text-transform: uppercase;
+      margin: 2rem 0 1rem;
+    }
+
+    /* ── Stat cards grid ────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.2rem 1.4rem;
+      transition: border-color .2s;
+    }
+    .stat-card:hover { border-color: var(--accent); }
+    .stat-card .label { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .5rem; }
+    .stat-card .value { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .stat-card .sub   { font-size: .8rem; color: var(--muted); margin-top: .3rem; }
+    .val-green { color: var(--green); }
+    .val-red   { color: var(--red); }
+    .val-blue  { color: var(--accent2); }
+    .val-yellow{ color: var(--yellow); }
+
+    /* ── Charts grid ─────────────────────────────────────────────────── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    @media (max-width: 780px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.4rem;
+    }
+    .chart-card h3 { font-size: .9rem; font-weight: 600; margin-bottom: 1rem; color: var(--text); }
+    .chart-wrap { position: relative; }
+
+    /* ── Credibility section ─────────────────────────────────────────── */
+    .cred-layout {
+      display: grid; grid-template-columns: auto 1fr;
+      gap: 2rem; align-items: start;
+    }
+    @media (max-width: 600px) { .cred-layout { grid-template-columns: 1fr; } }
+
+    .score-ring-wrap {
+      display: flex; flex-direction: column; align-items: center; gap: .5rem;
+    }
+    .score-circle {
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      background: conic-gradient(var(--score-color) var(--score-pct), var(--surface) 0);
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .score-circle::before {
+      content: '';
+      position: absolute; inset: 14px;
+      background: var(--card); border-radius: 50%;
+    }
+    .score-num {
+      position: relative; z-index: 1;
+      font-size: 1.9rem; font-weight: 800;
+    }
+    .score-label { font-size: .8rem; color: var(--muted); text-align: center; }
+
+    .breakdown-list { list-style: none; }
+    .breakdown-list li {
+      margin-bottom: .75rem;
+    }
+    .breakdown-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: .3rem; font-size: .85rem; }
+    .breakdown-row .bl { color: var(--text); font-weight: 500; }
+    .breakdown-row .pts { color: var(--muted); font-size: .78rem; }
+    .bar-bg {
+      background: var(--surface); border-radius: 999px; height: 7px; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 999px;
+      transition: width 1s ease;
+    }
+    .note { font-size: .75rem; color: var(--muted); margin-top: .2rem; }
+
+    /* ── Reviews table ───────────────────────────────────────────────── */
+    .reviews-controls {
+      display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .filter-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 8px; padding: .4rem .9rem;
+      font-size: .82rem; font-family: inherit; cursor: pointer;
+      transition: all .15s;
+    }
+    .filter-btn.active, .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+    .search-box {
+      margin-left: auto;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: .4rem .9rem .4rem 2rem;
+      color: var(--text); font-family: inherit; font-size: .82rem;
+      outline: none; position: relative; width: 200px;
+    }
+    .search-box:focus { border-color: var(--accent); }
+    .search-wrap { position: relative; }
+    .search-icon { position: absolute; left: .6rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: .9rem; pointer-events: none; }
+
+    .reviews-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--card); border-radius: var(--radius); overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .reviews-table th {
+      background: var(--surface); text-align: left;
+      padding: .85rem 1rem; font-size: .78rem;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .04em;
+      border-bottom: 1px solid var(--border);
+    }
+    .reviews-table td {
+      padding: .85rem 1rem; font-size: .85rem;
+      border-bottom: 1px solid rgba(48,54,61,.6);
+      vertical-align: top;
+    }
+    .reviews-table tr:last-child td { border-bottom: none; }
+    .reviews-table tr:hover td { background: rgba(26,159,255,.04); }
+
+    .review-text { max-width: 420px; line-height: 1.5; color: var(--text); }
+    .review-text.collapsed { max-height: 3em; overflow: hidden; position: relative; }
+    .read-more { font-size: .76rem; color: var(--accent); cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; margin-top: .2rem; }
+
+    .tag {
+      display: inline-block; padding: .2rem .6rem; border-radius: 6px; font-size: .72rem; font-weight: 600;
+    }
+    .tag-pos   { background: rgba(74,222,128,.15); color: var(--green); }
+    .tag-neg   { background: rgba(248,113,113,.15); color: var(--red); }
+    .tag-hq    { background: rgba(26,159,255,.15);  color: var(--accent2); }
+    .tag-spam  { background: rgba(251,146,60,.15);  color: #fb923c; }
+    .tag-lowhrs{ background: rgba(250,204,21,.12);  color: var(--yellow); }
+    .tag-std   { background: rgba(139,148,158,.12); color: var(--muted); }
+    .tag-detail{ background: rgba(163,230,53,.12);  color: #a3e635; }
+
+    .no-reviews { text-align: center; padding: 3rem; color: var(--muted); }
+
+    /* ── Util ────────────────────────────────────────────────────────── */
+    .card-full {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Responsive tweaks ─────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .profile-header { flex-wrap: wrap; }
+      .verdict-badge { margin-left: 0; }
+      nav { padding: .7rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ───────────────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-brand">
+    <a href="/">🎮 <span>Steam Player Credibility</span></a>
+  </div>
+  <span class="nav-sep">/</span>
+  <span class="nav-user">{{ profile.display_name }}</span>
+  <a class="nav-back" href="/">← New Search</a>
+</nav>
+
+<main>
+
+  {% if note %}
+  <div style="background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.25);color:#facc15;border-radius:12px;padding:.85rem 1.2rem;margin-bottom:1.2rem;font-size:.88rem;display:flex;gap:10px;align-items:flex-start;">
+    <span style="flex-shrink:0;">⚠</span><span>{{ note }}</span>
+  </div>
+  {% endif %}
+
+  <!-- ── Profile header ───────────────────────────────────────────────── -->
+  <div class="profile-header">
+    {% if profile.avatar %}
+      <img class="avatar" src="{{ profile.avatar }}" alt="avatar" onerror="this.style.display='none'">
+    {% else %}
+      <div class="avatar-placeholder">👤</div>
+    {% endif %}
+    <div class="profile-info">
+      <h2>{{ profile.display_name }}</h2>
+      <div class="meta">
+        <span>🎮 Steam Level {{ profile.level }}</span>
+        <span>📝 {{ analytics.total }} Review{{ 's' if analytics.total != 1 }}</span>
+        <span>🎯 {{ analytics.unique_games }} Game{{ 's' if analytics.unique_games != 1 }}</span>
+      </div>
+    </div>
+    <div
+      class="verdict-badge"
+      style="color: {{ analytics.verdict_color }}; border-color: {{ analytics.verdict_color }}; background: {{ analytics.verdict_color }}18;"
+    >
+      {{ analytics.verdict_icon }} {{ analytics.verdict }}
+    </div>
+  </div>
+
+  <!-- ── Stat cards ────────────────────────────────────────────────────── -->
+  <div class="section-title">Overview</div>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Total Reviews</div>
+      <div class="value val-blue">{{ analytics.total }}</div>
+      <div class="sub">{{ analytics.unique_games }} unique games</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Positive</div>
+      <div class="value val-green">{{ analytics.pos_count }}</div>
+      <div class="sub">{{ analytics.pos_pct }}% of reviews</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Negative</div>
+      <div class="value val-red">{{ analytics.neg_count }}</div>
+      <div class="sub">{{ analytics.neg_pct }}% of reviews</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Avg Words</div>
+      <div class="value val-blue">{{ analytics.avg_words }}</div>
+      <div class="sub">Median: {{ analytics.median_words }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Avg Hours</div>
+      <div class="value val-yellow">{{ analytics.avg_hours }}</div>
+      <div class="sub">at time of review</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Helpful Votes</div>
+      <div class="value val-blue">{{ analytics.total_helpful }}</div>
+      <div class="sub">avg {{ analytics.avg_helpful }} per review</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Quality Reviews</div>
+      <div class="value val-green">{{ analytics.quality_reviews }}</div>
+      <div class="sub">≥50 words & ≥10 hrs</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Credibility Score</div>
+      <div class="value" style="color: {{ analytics.verdict_color }}">{{ analytics.credibility_score }}</div>
+      <div class="sub">out of 100</div>
+    </div>
+  </div>
+
+  <!-- ── Charts ────────────────────────────────────────────────────────── -->
+  <div class="section-title">Visual Analysis</div>
+  <div class="charts-grid">
+
+    <!-- Sentiment Pie -->
+    <div class="chart-card">
+      <h3>👍 Positive vs Negative Reviews</h3>
+      <div class="chart-wrap" style="max-height:280px;">
+        <canvas id="pieChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Top Games Bar -->
+    <div class="chart-card">
+      <h3>🏆 Top Reviewed Games</h3>
+      <div class="chart-wrap" style="max-height:280px;">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Quality distribution doughnut -->
+    <div class="chart-card">
+      <h3>✏️ Review Quality Distribution</h3>
+      <div class="chart-wrap" style="max-height:280px;">
+        <canvas id="qualityChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Timeline line chart -->
+    <div class="chart-card">
+      <h3>📅 Reviews Over Time</h3>
+      <div class="chart-wrap" style="max-height:280px;">
+        <canvas id="timelineChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Credibility breakdown ─────────────────────────────────────────── -->
+  <div class="section-title">Credibility Analysis</div>
+  <div class="card-full">
+    <div class="cred-layout">
+
+      <!-- Score ring -->
+      <div class="score-ring-wrap">
+        <div
+          class="score-circle"
+          style="
+            --score-color: {{ analytics.verdict_color }};
+            --score-pct: {{ analytics.credibility_score }}%;
+          "
+        >
+          <span class="score-num" style="color: {{ analytics.verdict_color }}">{{ analytics.credibility_score }}</span>
+        </div>
+        <div class="score-label" style="color: {{ analytics.verdict_color }}; font-weight:700;">{{ analytics.verdict }}</div>
+        <div class="score-label">out of 100</div>
+      </div>
+
+      <!-- Breakdown bars -->
+      <ul class="breakdown-list">
+        {% for item in analytics.credibility_breakdown %}
+        <li>
+          <div class="breakdown-row">
+            <span class="bl">{{ item.label }}</span>
+            <span class="pts">{{ item.earned | round(1) }} / {{ item.max }} pts</span>
+          </div>
+          <div class="bar-bg">
+            <div
+              class="bar-fill"
+              style="width: {{ item.pct }}%; background: {{ analytics.verdict_color }};"
+            ></div>
+          </div>
+          <div class="note">{{ item.note }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+
+    </div>
+  </div>
+
+  <!-- ── Reviews table ─────────────────────────────────────────────────── -->
+  <div class="section-title">All Reviews ({{ analytics.total }})</div>
+  <div class="card-full" style="padding: 1.2rem;">
+
+    <div class="reviews-controls">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="pos">👍 Positive</button>
+      <button class="filter-btn" data-filter="neg">👎 Negative</button>
+      <button class="filter-btn" data-filter="hq">⭐ High Quality</button>
+      <button class="filter-btn" data-filter="spam">⚠ Spam</button>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-box" id="reviewSearch" type="text" placeholder="Search reviews…">
+      </div>
+    </div>
+
+    {% if analytics.reviews %}
+    <table class="reviews-table" id="reviewTable">
+      <thead>
+        <tr>
+          <th>Game</th>
+          <th>Verdict</th>
+          <th>Review</th>
+          <th>Hrs</th>
+          <th>Words</th>
+          <th>Quality</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in analytics.reviews %}
+        <tr
+          data-filter-pos="{{ 'pos' if r.recommended else 'neg' }}"
+          data-filter-quality="{{ r.quality_tag | lower | replace(' ', '') }}"
+          data-game="{{ r.game | lower }}"
+          data-text="{{ r.text[:100] | lower }}"
+        >
+          <td style="white-space:nowrap; font-weight:600; font-size:.83rem;">{{ r.game }}</td>
+          <td>
+            <span class="tag {{ 'tag-pos' if r.recommended else 'tag-neg' }}">
+              {{ '👍' if r.recommended else '👎' }}
+            </span>
+          </td>
+          <td>
+            {% if r.text %}
+            <div class="review-text collapsed" id="rt-{{ loop.index }}">{{ r.text }}</div>
+            {% if r.word_count > 25 %}
+            <button class="read-more" onclick="toggleText({{ loop.index }}, this)">Show more</button>
+            {% endif %}
+            {% else %}
+            <span style="color:var(--muted); font-style:italic;">No text</span>
+            {% endif %}
+          </td>
+          <td style="white-space:nowrap; color:var(--muted);">{{ r.hours }}</td>
+          <td style="color:var(--muted);">{{ r.word_count }}</td>
+          <td>
+            {% if r.quality_tag == 'High Quality' %}
+              <span class="tag tag-hq">⭐ HQ</span>
+            {% elif r.quality_tag == 'Spam' %}
+              <span class="tag tag-spam">⚠ Spam</span>
+            {% elif r.quality_tag == 'Low Hours' %}
+              <span class="tag tag-lowhrs">⏱ Low Hrs</span>
+            {% elif r.quality_tag == 'Detailed' %}
+              <span class="tag tag-detail">📝 Detailed</span>
+            {% else %}
+              <span class="tag tag-std">Standard</span>
+            {% endif %}
+          </td>
+          <td style="white-space:nowrap; color:var(--muted); font-size:.78rem;">{{ r.date }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="no-reviews">
+      <div style="font-size:3rem; margin-bottom:1rem;">📭</div>
+      <div>No reviews found for this user.</div>
+      <div style="margin-top:.5rem; font-size:.85rem;">The profile might be private or this user hasn't written any reviews.</div>
+    </div>
+    {% endif %}
+
+  </div>
+
+</main>
+
+<!-- ── Chart.js setup ───────────────────────────────────────────────────── -->
+<script>
+  Chart.defaults.color = '#8b949e';
+  Chart.defaults.borderColor = '#30363d';
+  Chart.defaults.font.family = "'Inter', sans-serif";
+
+  const BLUE   = '#1a9fff';
+  const BLUE2  = '#66c0f4';
+  const GREEN  = '#4ade80';
+  const RED    = '#f87171';
+  const YELLOW = '#facc15';
+  const PURPLE = '#c084fc';
+  const ORANGE = '#fb923c';
+
+  // ── Pie chart ──────────────────────────────────────────────────────────
+  new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Positive', 'Negative'],
+      datasets: [{
+        data: [{{ analytics.pos_count }}, {{ analytics.neg_count }}],
+        backgroundColor: [GREEN, RED],
+        borderWidth: 0,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} (${((ctx.parsed / ({{ analytics.pos_count }} + {{ analytics.neg_count }})) * 100).toFixed(1)}%)`
+          }
+        }
+      },
+      cutout: '62%',
+    }
+  });
+
+  // ── Top games bar chart ────────────────────────────────────────────────
+  const topGames  = {{ analytics.top_games | tojson }};
+  const palette   = [BLUE, BLUE2, GREEN, YELLOW, PURPLE, ORANGE, RED, '#a3e635', '#38bdf8', '#e879f9'];
+  new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: topGames.map(g => g.game.length > 20 ? g.game.slice(0,18)+'…' : g.game),
+      datasets: [{
+        label: 'Reviews',
+        data: topGames.map(g => g.count),
+        backgroundColor: topGames.map((_, i) => palette[i % palette.length] + 'cc'),
+        borderColor:     topGames.map((_, i) => palette[i % palette.length]),
+        borderWidth: 1, borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: '#30363d' }, ticks: { stepSize: 1 } },
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+
+  // ── Quality doughnut ───────────────────────────────────────────────────
+  const total = {{ analytics.total }};
+  const hqCount     = {{ analytics.quality_reviews }};
+  const spamCount   = {{ analytics.spam_reviews }};
+  const lowhrsCount = {{ analytics.low_hour_reviews }};
+  const stdCount    = Math.max(0, total - hqCount - spamCount - lowhrsCount);
+  new Chart(document.getElementById('qualityChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['High Quality', 'Detailed / Std', 'Low Hours', 'Spam / Short'],
+      datasets: [{
+        data: [hqCount, stdCount, lowhrsCount, spamCount],
+        backgroundColor: [GREEN, BLUE2, YELLOW, ORANGE],
+        borderWidth: 0, hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { position: 'bottom', labels: { padding: 14, boxWidth: 12 } } },
+      cutout: '60%',
+    }
+  });
+
+  // ── Timeline ───────────────────────────────────────────────────────────
+  const timeline = {{ analytics.timeline | tojson }};
+  new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: {
+      labels: timeline.map(t => t.label),
+      datasets: [{
+        label: 'Reviews',
+        data: timeline.map(t => t.count),
+        borderColor: BLUE, backgroundColor: BLUE + '22',
+        fill: true, tension: .35, pointRadius: 5,
+        pointBackgroundColor: BLUE,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: '#30363d' }, ticks: { stepSize: 1 } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // ── Table filter & search ───────────────────────────────────────────────
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    });
+  });
+  document.getElementById('reviewSearch').addEventListener('input', applyFilters);
+
+  function applyFilters() {
+    const filter = document.querySelector('.filter-btn.active').dataset.filter;
+    const query  = document.getElementById('reviewSearch').value.toLowerCase();
+    document.querySelectorAll('#reviewTable tbody tr').forEach(row => {
+      const pos   = row.dataset.filterPos;
+      const qual  = row.dataset.filterQuality;
+      const game  = row.dataset.game || '';
+      const text  = row.dataset.text || '';
+      const matchFilter =
+        filter === 'all' ||
+        (filter === 'pos' && pos === 'pos') ||
+        (filter === 'neg' && pos === 'neg') ||
+        (filter === 'hq'  && qual === 'highquality') ||
+        (filter === 'spam' && qual === 'spam');
+      const matchSearch = !query || game.includes(query) || text.includes(query);
+      row.style.display = matchFilter && matchSearch ? '' : 'none';
+    });
+  }
+
+  // ── Read more / less ───────────────────────────────────────────────────
+  function toggleText(idx, btn) {
+    const el = document.getElementById('rt-' + idx);
+    if (el.classList.contains('collapsed')) {
+      el.classList.remove('collapsed');
+      btn.textContent = 'Show less';
+    } else {
+      el.classList.add('collapsed');
+      btn.textContent = 'Show more';
+    }
+  }
+</script>
+</body>
+</html>
