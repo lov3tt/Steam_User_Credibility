@@ -9,6 +9,14 @@ A professional web dashboard that analyzes a Steam player's review history and s
 ## Manual Start
 
 ```bash
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS / Linux
+source .venv/bin/activate
+
 pip install -r requirements.txt
 python app.py
 ```
@@ -50,6 +58,11 @@ Then open http://127.0.0.1:5000
 | Community Trust | 10 | Helpful votes on reviews |
 | Game Diversity | 5 | Reviews spread across multiple games |
 
-## API key
+## API keys
 
-Copy `.env.example` to `.env` and set `STEAM_API_KEY`. The key is loaded from `.env` only (not in source code). Users only enter a Steam username on the homepage.
+Copy `.env.example` to `.env` and set:
+
+- `STEAM_API_KEY` — required for Steam profile and review data
+- `OPENROUTER_API_KEY` — required for the AI credibility analysis on the dashboard
+
+Keys are loaded from `.env` only (not in source code). Users only enter a Steam username on the homepage.

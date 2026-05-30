@@ -1,6 +1,6 @@
 """
 Steam Player Credibility — Flask Application
-Run:  python app.py
+Run:  .venv\Scripts\python app.py  (or activate .venv first, then python app.py)
 Then open http://127.0.0.1:5000
 """
 
@@ -12,6 +12,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from scraper import scrape_reviews, resolve_steamid, get_steam_api_key
 from analyzer import analyze
+from llm_analysis import generate_credibility_analysis
 import logging
 import re
 
@@ -26,9 +27,12 @@ log = logging.getLogger(__name__)
 def _public_error(exc: ValueError) -> str:
     """Hide API-key / .env setup details from the UI."""
     msg = str(exc).lower()
-    if "steam_api_key" in msg or "api key" in msg:
+    if "steam_api_key" in msg or ("api key" in msg and "openrouter" not in msg):
         log.error("Steam API configuration error: %s", exc)
         return "Unable to reach Steam right now. Please try again in a moment."
+    if "openrouter" in msg:
+        log.error("OpenRouter configuration error: %s", exc)
+        return "AI analysis is unavailable. Check your OpenRouter API key in .env."
     return str(exc)
 
 
@@ -61,11 +65,24 @@ def dashboard(steamid: str):
         data = scrape_reviews(steamid)
         analytics = analyze(data)
         note = data.get("note", "")
+
+        ai_analysis = ""
+        ai_analysis_error = ""
+        try:
+            ai_analysis = generate_credibility_analysis(data["profile"], analytics)
+        except ValueError as e:
+            ai_analysis_error = _public_error(e)
+        except Exception:
+            log.exception("AI analysis failed for steamid %s", steamid)
+            ai_analysis_error = "Unable to generate AI analysis right now. Please try again later."
+
         return render_template(
             "dashboard.html",
             profile=data["profile"],
             analytics=analytics,
             note=note,
+            ai_analysis=ai_analysis,
+            ai_analysis_error=ai_analysis_error,
         )
     except ValueError as e:
         return render_template("index.html", error=_public_error(e))
