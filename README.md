@@ -18,13 +18,11 @@ Then open http://127.0.0.1:5000
 ## Requirements
 
 - Python 3.10+
-- A **free** Steam Web API key → https://steamcommunity.com/dev/apikey
-  (Sign in, enter any website name, done)
 - Target Steam profile must be set to **Public** (Profile + Game Details)
 
 ## How it works
 
-1. Enter a Steam username + your free API key on the homepage
+1. Enter a Steam username on the homepage
 2. The app uses the official Steam Web API to:
    - Resolve the username to a SteamID64
    - Fetch the player's profile and game library
@@ -52,6 +50,6 @@ Then open http://127.0.0.1:5000
 | Community Trust | 10 | Helpful votes on reviews |
 | Game Diversity | 5 | Reviews spread across multiple games |
 
-## Privacy
+## API key
 
-Your API key is stored only in your browser session and is never sent anywhere except the official Steam API.
+Copy `.env.example` to `.env` and set `STEAM_API_KEY`. The key is loaded from `.env` only (not in source code). Users only enter a Steam username on the homepage.

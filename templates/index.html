@@ -86,20 +86,15 @@
     .field-label {
       font-size: .8rem; font-weight: 600; color: var(--muted);
       text-transform: uppercase; letter-spacing: .05em;
-      margin-bottom: .45rem; display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: .45rem;
     }
-    .field-label a {
-      font-size: .78rem; color: var(--accent); text-decoration: none; font-weight: 500;
-      text-transform: none; letter-spacing: 0;
-    }
-    .field-label a:hover { text-decoration: underline; }
 
     .input-wrap { position: relative; margin-bottom: 1.1rem; }
     .input-wrap .icon {
       position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
       font-size: 1.1rem; color: var(--muted); pointer-events: none;
     }
-    input[type="text"], input[type="password"] {
+    input[type="text"] {
       width: 100%;
       background: var(--surface);
       border: 1.5px solid var(--border);
@@ -144,23 +139,14 @@
       display: flex; align-items: center; gap: 8px;
     }
 
-    .api-hint {
+    .hint-box {
       background: rgba(26,159,255,.07); border: 1px solid rgba(26,159,255,.2);
       border-radius: 8px; padding: .75rem 1rem;
       font-size: .82rem; color: var(--muted); line-height: 1.5;
       margin-bottom: 1.4rem; display: flex; gap: 8px;
     }
-    .api-hint .hi { color: var(--accent); flex-shrink: 0; font-size: 1rem; }
-    .api-hint a { color: var(--accent2); text-decoration: none; }
-    .api-hint a:hover { text-decoration: underline; }
-
-    .toggle-key {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; cursor: pointer;
-      color: var(--muted); font-size: .8rem; font-family: inherit;
-      padding: .2rem .4rem; border-radius: 4px;
-    }
-    .toggle-key:hover { color: var(--text); }
+    .hint-box .hi { color: var(--accent); flex-shrink: 0; font-size: 1rem; }
+    .hint-box code { color: var(--accent2); font-size: .78rem; }
 
     .features {
       display: flex; gap: .8rem;
@@ -198,50 +184,34 @@
 
     <div class="card">
       <h2>Analyze a reviewer</h2>
-      <p>Enter a Steam community username and your free API key to pull their full review history and credibility score.</p>
+      <p>Enter a <strong>profile link</strong>, <strong>SteamID64</strong>, or <strong>custom URL</strong> (<code>/id/…</code>). Display names alone usually do not work unless listed in <code>.env</code> aliases.</p>
+
+      <div class="hint-box">
+        <span class="hi">ℹ</span>
+        <span>
+          <strong>Display name vs URL:</strong> &quot;VenkraCade&quot; on a profile is not the same as
+          <code>steamcommunity.com/id/…</code>. Many accounts only have a
+          <code>/profiles/76561198…</code> link — copy that from Steam → View my profile → Share.
+        </span>
+      </div>
 
       {% if error %}
       <div class="error-msg"><span>⚠</span> {{ error }}</div>
       {% endif %}
 
-      <div class="api-hint">
-        <span class="hi">🔑</span>
-        <span>A <strong>free</strong> Steam API key is required.
-        Get yours in 30 seconds at
-        <a href="https://steamcommunity.com/dev/apikey" target="_blank">steamcommunity.com/dev/apikey</a>
-        — just sign in and enter any website name.</span>
-      </div>
-
       <form action="/search" method="POST" id="searchForm">
 
-        <div class="field-label">Steam Username</div>
+        <div class="field-label">Steam Profile URL or ID</div>
         <div class="input-wrap" style="margin-bottom:1.4rem;">
           <span class="icon">🎮</span>
           <input
             type="text"
             name="username"
-            placeholder="e.g. gaben or 76561197960287930"
+            placeholder="e.g. 76561198019362735 or steamcommunity.com/profiles/…"
             autocomplete="off"
             autofocus
             required
           />
-        </div>
-
-        <div class="field-label">
-          Steam API Key
-          <a href="https://steamcommunity.com/dev/apikey" target="_blank">Get free key →</a>
-        </div>
-        <div class="input-wrap" style="margin-bottom:1.4rem;">
-          <span class="icon">🔑</span>
-          <input
-            type="password"
-            id="apiKeyInput"
-            name="api_key"
-            placeholder="Paste your API key here"
-            autocomplete="off"
-            required
-          />
-          <button type="button" class="toggle-key" onclick="toggleKey()">Show</button>
         </div>
 
         <button class="btn" type="submit" id="submitBtn">
@@ -259,22 +229,11 @@
     </div>
 
     <div class="footer">
-      Uses the official Steam Web API · Profile must be Public
+      Profile must be Public (Profile + Game Details)
     </div>
   </div>
 
   <script>
-    function toggleKey() {
-      const inp = document.getElementById('apiKeyInput');
-      const btn = document.querySelector('.toggle-key');
-      if (inp.type === 'password') {
-        inp.type = 'text';
-        btn.textContent = 'Hide';
-      } else {
-        inp.type = 'password';
-        btn.textContent = 'Show';
-      }
-    }
     document.getElementById('searchForm').addEventListener('submit', () => {
       document.getElementById('submitBtn').classList.add('loading');
     });

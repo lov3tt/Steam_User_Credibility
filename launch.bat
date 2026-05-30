@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 title Steam Player Credibility
 color 0B
 
@@ -18,6 +19,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
+:: Stop any old server still running on port 5000
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5000 ^| findstr LISTENING') do (
+    taskkill /F /PID %%a >nul 2>&1
+)
+
 :: Install / upgrade dependencies silently
 echo  Installing dependencies...
 python -m pip install -r requirements.txt --quiet --upgrade
@@ -27,7 +33,7 @@ echo  Starting server at http://127.0.0.1:5000 ...
 echo.
 
 :: Start Flask in a new window so this console stays clean
-start "Steam Player Credibility - Server" cmd /k "python app.py"
+start "Steam Player Credibility - Server" cmd /k "cd /d "%~dp0" && python app.py"
 
 :: Give the server a moment to start, then open the browser
 timeout /t 2 /nobreak >nul
