@@ -200,6 +200,14 @@ def _profile_reviews_path(steamid: str, vanity: str | None) -> str:
     return f"profiles/{steamid}"
 
 
+def _game_store_url(appid: int) -> str:
+    return f"https://store.steampowered.com/app/{appid}/"
+
+
+def _game_thumbnail_url(appid: int) -> str:
+    return f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/capsule_sm_120.jpg"
+
+
 def _fetch_game_name(appid: int) -> str:
     if appid in _game_name_cache:
         return _game_name_cache[appid]
@@ -230,6 +238,11 @@ def _parse_review_box(box) -> dict | None:
     if not m:
         return None
     appid = int(m.group(1))
+
+    thumb_el = link.select_one("img")
+    thumbnail = thumb_el.get("src", "").strip() if thumb_el else ""
+    if not thumbnail:
+        thumbnail = _game_thumbnail_url(appid)
 
     title_el = box.select_one(".title a")
     title_text = title_el.get_text(strip=True) if title_el else ""
@@ -265,6 +278,8 @@ def _parse_review_box(box) -> dict | None:
     return {
         "appid": appid,
         "game": _fetch_game_name(appid),
+        "game_url": _game_store_url(appid),
+        "game_thumbnail": thumbnail,
         "text": text,
         "recommended": recommended,
         "hours": hours,

@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MODEL = "openrouter/owl-alpha"
-TARGET_WORDS = 300
+TARGET_WORDS = 150
 
 
 def get_openrouter_api_key() -> str:
@@ -56,14 +56,14 @@ Review statistics:
 Score breakdown:
 {chr(10).join(breakdown_lines)}
 
-Write a single cohesive paragraph-style analysis in plain English (no bullet points, no markdown headers).
-Address whether this reviewer appears trustworthy, what patterns stand out, and any red flags or strengths.
-Be balanced and specific — reference the data above.
+Write a clean, concise summary in plain English (no bullet points, no markdown headers).
+In one or two short paragraphs, state whether this reviewer appears trustworthy, the strongest signal from the data, and the main red flag or caveat if any.
+Be direct and balanced — cite only the most relevant stats, not every metric.
 Target length: approximately {TARGET_WORDS} words."""
 
 
 def generate_credibility_analysis(profile: dict, analytics: dict) -> str:
-    """Call OpenRouter and return an ~300-word credibility narrative."""
+    """Call OpenRouter and return an ~150-word credibility summary."""
     if analytics.get("total", 0) == 0:
         return (
             "This profile has no public reviews to analyze. "
@@ -80,13 +80,13 @@ def generate_credibility_analysis(profile: dict, analytics: dict) -> str:
                 "role": "system",
                 "content": (
                     "You are an expert analyst evaluating Steam user review credibility. "
-                    "Write clear, professional prose for a dashboard audience. "
+                    "Write a tight, clean summary for a dashboard audience — no filler, no repetition. "
                     "Do not use markdown formatting."
                 ),
             },
             {"role": "user", "content": prompt},
         ],
-        "max_tokens": 550,
+        "max_tokens": 280,
         "temperature": 0.7,
     }
 
