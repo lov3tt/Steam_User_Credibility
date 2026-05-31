@@ -8,6 +8,7 @@ import os
 import re
 import time
 import logging
+from collections.abc import Callable
 from pathlib import Path
 
 import requests
@@ -27,6 +28,7 @@ HEADERS = {
 }
 
 MAX_REVIEW_PAGES = 40
+ProgressCallback = Callable[[int, str], None] | None
 _game_name_cache: dict[int, str] = {}
 _display_name_aliases: dict[str, str] | None = None
 
@@ -138,8 +140,8 @@ def resolve_steamid(username: str, api_key: str) -> str:
     if kind == "steamid":
         return lookup
 
-    # Display names (e.g. "VenkraCade") are not the same as /id/ custom URLs.
-    # Steam has no public API to search by display name — optional .env aliases only.
+    # Display names (e.g. "Player's Nickname") are not the same as /id/ custom URLs.
+    # Steam has no public API to search by display name, You have to click on the user's profile and click on their url on the top and paste that to the search bar.
     alias_id = _load_display_name_aliases().get(lookup.lower())
     if alias_id:
         return alias_id
@@ -289,7 +291,11 @@ def _parse_review_box(box) -> dict | None:
     }
 
 
-def scrape_community_reviews(steamid: str, vanity: str | None = None) -> tuple[list[dict], str]:
+def scrape_community_reviews(
+    steamid: str,
+    vanity: str | None = None,
+    on_progress: ProgressCallback = None,
+) -> tuple[list[dict], str]:
     """
     Scrape public reviews from the user's Steam Community recommended page.
     Returns (reviews, status_note).
@@ -323,6 +329,13 @@ def scrape_community_reviews(steamid: str, vanity: str | None = None) -> tuple[l
             if parsed:
                 reviews.append(parsed)
 
+        if on_progress:
+            pct = 20 + int((page / MAX_REVIEW_PAGES) * 45)
+            on_progress(
+                min(pct, 65),
+                f"Fetching reviews... ({len(reviews)} found)",
+            )
+
         paging = soup.select_one(".workshopBrowsePagingInfo")
         if paging:
             pm = re.search(
@@ -339,15 +352,19 @@ def scrape_community_reviews(steamid: str, vanity: str | None = None) -> tuple[l
     return reviews, ""
 
 
-def scrape_reviews(username: str) -> dict:
+def scrape_reviews(username: str, on_progress: ProgressCallback = None) -> dict:
     """
     Resolve a Steam user, fetch profile + public reviews.
     Returns {profile, reviews, note}.
     """
     api_key = get_steam_api_key()
+    if on_progress:
+        on_progress(5, "Connecting to Steam...")
     if not validate_api_key(api_key):
         raise ValueError("Steam API key is invalid. Check STEAM_API_KEY in your .env file.")
 
+    if on_progress:
+        on_progress(10, "Looking up Steam profile...")
     lookup, kind = parse_profile_input(username)
     steamid = resolve_steamid(username, api_key)
 
@@ -358,8 +375,10 @@ def scrape_reviews(username: str) -> dict:
         if resolved == steamid:
             vanity = lookup
 
+    if on_progress:
+        on_progress(15, "Loading profile...")
     profile = get_profile(steamid, api_key)
-    reviews, status = scrape_community_reviews(steamid, vanity)
+    reviews, status = scrape_community_reviews(steamid, vanity, on_progress=on_progress)
 
     note = ""
     if status == "private":
@@ -373,4 +392,4 @@ def scrape_reviews(username: str) -> dict:
             "or the custom URL / SteamID may be incorrect."
         )
 
-    return {"profile": profile, "reviews": reviews, "note": note}
+    return {"profile": profile, "reviews": reviews, "note": note, "steamid": steamid}

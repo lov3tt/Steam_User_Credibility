@@ -1,12 +1,13 @@
 # Steam Player Credibility
 
-A professional web dashboard that analyzes a Steam player's review history and scores their credibility using the official Steam Web API.
+A web dashboard that analyzes a Steam player's public review history, scores their credibility across seven dimensions, and generates a short AI-written summary.
 
 ## Quick Start (Windows)
 
-**Double-click `launch.bat`** — it installs dependencies and opens the browser automatically.
+1. Copy `.env.example` to `.env` and add your API keys (see [API keys](#api-keys) below).
+2. **Double-click `launch.bat`** — it creates a virtual environment if needed, installs dependencies, and opens the browser.
 
-## Manual Start
+## Manual Setup
 
 ```bash
 python -m venv .venv
@@ -26,25 +27,31 @@ Then open http://127.0.0.1:5000
 ## Requirements
 
 - Python 3.10+
+- A [Steam Web API key](https://steamcommunity.com/dev/apikey)
+- An [OpenRouter API key](https://openrouter.ai/) for AI summaries
 - Target Steam profile must be set to **Public** (Profile + Game Details)
 
 ## How it works
 
-1. Enter a Steam username on the homepage
-2. The app uses the official Steam Web API to:
-   - Resolve the username to a SteamID64
-   - Fetch the player's profile and game library
-   - Retrieve all individual game recommendations by the player
-3. The dashboard shows charts, stats, and a credibility score
+1. Enter a **profile link**, **SteamID64**, or **custom URL** (`/id/…`) on the homepage.
+2. A progress bar tracks the search while the app:
+   - Resolves the profile to a SteamID64
+   - Fetches the player's profile and public reviews
+   - Scores credibility across seven dimensions
+   - Generates a ~150-word AI summary via OpenRouter
+3. The dashboard shows charts, stats, the AI analysis, and a full review table.
+
+**Note:** Steam display names alone usually cannot be searched. Copy the full profile link from Steam → View my profile → Share. For repeat lookups, you can map display names in `.env` (see below).
 
 ## Features
 
-- Positive / negative review pie chart
-- Top reviewed games bar chart
-- Review quality distribution doughnut chart
-- Reviews over time line chart
-- 7-dimension credibility scoring (0–100)
-- Filterable & searchable review table
+- **Search progress bar** — real-time status while fetching and analyzing
+- **AI credibility summary** — ~150-word narrative powered by `openrouter/owl-alpha`
+- **Positive / negative review** pie chart
+- **Review quality distribution** doughnut chart
+- **Reviews over time** line chart
+- **7-dimension credibility score** (0–100) with breakdown
+- **Review table** — filterable, searchable, with game thumbnails and links to the Steam Store
 
 ## Credibility Score Dimensions
 
@@ -62,7 +69,22 @@ Then open http://127.0.0.1:5000
 
 Copy `.env.example` to `.env` and set:
 
-- `STEAM_API_KEY` — required for Steam profile and review data
-- `OPENROUTER_API_KEY` — required for the AI credibility analysis on the dashboard
+| Variable | Required | Description |
+|---|---|---|
+| `STEAM_API_KEY` | Yes | Steam Web API key for profiles and reviews |
+| `OPENROUTER_API_KEY` | Yes | OpenRouter key for the AI credibility summary |
+| `STEAM_NAME_ALIASES` | No | Map display names to SteamID64, e.g. `Name=76561198019362735,Other=76561198…` |
 
-Keys are loaded from `.env` only (not in source code). Users only enter a Steam username on the homepage.
+Keys are loaded from `.env` only — never hard-coded in source.
+
+## Project structure
+
+```
+app.py            Flask routes and search progress API
+scraper.py        Steam profile and review fetching
+analyzer.py       Credibility scoring and analytics
+llm_analysis.py   OpenRouter AI summary generation
+templates/        Homepage and dashboard HTML
+launch.bat        Windows one-click launcher (uses .venv)
+requirements.txt  Python dependencies
+```
