@@ -77,50 +77,7 @@ Copy `.env.example` to `.env` and set:
 | `STEAM_NAME_ALIASES` | No | Map display names to SteamID64, e.g. `Name=76561198019362735,Other=76561198…` |
 | `APP_URL` | No | Public app URL for OpenRouter headers (Render sets `RENDER_EXTERNAL_URL`) |
 
-Keys are loaded from environment variables (via `.env` locally or Render dashboard in production).
 
-## Deploy on Render
-
-This app is ready to deploy as a Render **Web Service**.
-
-### Option A — Blueprint (recommended)
-
-1. Push this repo to GitHub.
-2. In the [Render Dashboard](https://dashboard.render.com/), click **New → Blueprint**.
-3. Connect the repo — Render reads `render.yaml` automatically.
-4. Set secret environment variables when prompted:
-   - `STEAM_API_KEY`
-   - `OPENROUTER_API_KEY`
-5. Deploy. Render assigns a public URL (also used as `RENDER_EXTERNAL_URL` for OpenRouter).
-
-### Option B — Manual web service
-
-1. Push this repo to GitHub.
-2. **New → Web Service** → connect the repo.
-3. Use these settings:
-
-| Setting | Value |
-|---|---|
-| Runtime | Python |
-| Build Command | `pip install -r requirements.txt` |
-| Start Command | `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300` |
-
-4. Add environment variables:
-
-| Variable | Required |
-|---|---|
-| `STEAM_API_KEY` | Yes |
-| `OPENROUTER_API_KEY` | Yes |
-| `FLASK_SECRET_KEY` | Yes (generate a random string) |
-| `STEAM_NAME_ALIASES` | No |
-
-Render sets `PORT` and `RENDER_EXTERNAL_URL` automatically — no need to configure those.
-
-### Notes for production
-
-- **Single worker required** — search progress is stored in memory, so the start command uses `--workers 1`.
-- **Cold starts** — on Render's free plan, the service sleeps after inactivity; the first search after wake-up may take longer.
-- **Long searches** — review scraping and AI analysis run in a background thread with progress polling, so the browser stays responsive.
 
 ## Project structure
 
@@ -130,8 +87,7 @@ scraper.py        Steam profile and review fetching
 analyzer.py       Credibility scoring and analytics
 llm_analysis.py   OpenRouter AI summary generation
 templates/        Homepage and dashboard HTML
-render.yaml       Render Blueprint config
-Procfile          Production start command (Gunicorn)
+Procfile          Optional — same start command for Render/Heroku-style hosts
 runtime.txt       Python version for Render
 launch.bat        Windows one-click launcher (uses .venv)
 requirements.txt  Python dependencies
