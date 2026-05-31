@@ -14,12 +14,13 @@ from scraper import scrape_reviews, resolve_steamid, get_steam_api_key
 from analyzer import analyze
 from llm_analysis import generate_credibility_analysis
 import logging
+import os
 import re
 import threading
 import uuid
 
 app = Flask(__name__)
-app.secret_key = "steam-player-credibility-2024"
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "steam-player-credibility-dev-key")
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 logging.basicConfig(level=logging.INFO)
@@ -233,5 +234,7 @@ def api_reviews(steamid: str):
 
 
 if __name__ == "__main__":
-    print("Steam Player Credibility running at http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    host = os.environ.get("HOST", "127.0.0.1")
+    print(f"Steam Player Credibility running at http://{host}:{port}")
+    app.run(host=host, port=port, debug=False)

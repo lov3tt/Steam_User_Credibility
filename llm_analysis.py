@@ -15,6 +15,14 @@ MODEL = "openrouter/owl-alpha"
 TARGET_WORDS = 150
 
 
+def _app_url() -> str:
+    return (
+        os.environ.get("RENDER_EXTERNAL_URL")
+        or os.environ.get("APP_URL")
+        or "http://127.0.0.1:5000"
+    ).rstrip("/")
+
+
 def get_openrouter_api_key() -> str:
     key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     if not key:
@@ -93,7 +101,7 @@ def generate_credibility_analysis(profile: dict, analytics: dict) -> str:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://127.0.0.1:5000",
+        "HTTP-Referer": _app_url(),
         "X-Title": "Steam Player Credibility",
     }
 
